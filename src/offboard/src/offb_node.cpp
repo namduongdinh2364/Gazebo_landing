@@ -172,9 +172,9 @@ void custom_activity_callback(const std_msgs::String::ConstPtr& msg)
 void signal_callback_handler(int signum)
 {
     cout << "\n======================================="<< endl;
-    outfile0.close();
-    cout << "\nSaved File" << endl;
-    cout << path << endl;
+    // outfile0.close();
+    // cout << "\nSaved File" << endl;
+    // cout << path << endl;
     cout << "EXIT programme " << endl;
     exit(signum);
 }
@@ -199,8 +199,8 @@ int main(int argc, char **argv)
 //     strcat(path_script, "/scripts/gui_script.sh");
 // #endif /* HITL */
     strcat(path, "/position.txt");
-    outfile0.open(path);
-    outfile0 << "x " << "y " << "z " << "m " << "s" << endl;
+    // outfile0.open(path);
+    // outfile0 << "x " << "y " << "z " << "m " << "s" << endl;
 
     cout<< "______  __   __    ___     _____    _____ " << endl;
     cout<< "| ___ \\ \\ \\ / /   /   |   / ___ \\  | ___ \\" <<endl;
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
 
         baygio = time(0);
         ltime = localtime(&baygio);
-        outfile0 << PRECISION(vlocal_pose.pose.position.x) << " " << PRECISION(vlocal_pose.pose.position.y) << " " << PRECISION(vlocal_pose.pose.position.z) << " " << ltime->tm_min << " " << ltime->tm_sec << endl;
+        // outfile0 << PRECISION(vlocal_pose.pose.position.x) << " " << PRECISION(vlocal_pose.pose.position.y) << " " << PRECISION(vlocal_pose.pose.position.z) << " " << ltime->tm_min << " " << ltime->tm_sec << endl;
         if(mode_controll == PID || mode_controll == BOTH)
         {
             output_x = pid_x.getOutput(PRECISION(vlocal_pose.pose.position.x), pose.pose.position.x);

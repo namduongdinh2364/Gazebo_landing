@@ -275,11 +275,11 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         {
             pose.pose.position.x = x;
             pose.pose.position.y = y;
-            if (vlocal_pose.pose.position.z > 0.7)
+            if (vlocal_pose.pose.position.z >PRECISION(position_cam[2]) + 0.7)
             {
-                if (pose.pose.position.z <= 0.5)
+                if (pose.pose.position.z <= PRECISION(position_cam[2]) + 0.5)
                 {
-                    pose.pose.position.z = 0.5;
+                    pose.pose.position.z = PRECISION(position_cam[2]) + 0.5;
                 }
                 else
                 {
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
     ros::Subscriber imu_sub = n.subscribe
                             ("/mavros/imu/data",10,imuCallback);
     ros::Subscriber gps_sub = n.subscribe
-                            ("/mavros/local_position/pose",100,mavrosPoseCallback);
+                            ("/mavros/local_position/pose",10,mavrosPoseCallback);
     ros::Subscriber pose_sub = n.subscribe
                             ("/tf_list", 1000, get_params_cb);
     ros::Subscriber local_pos_sub = n.subscribe<geometry_msgs::PoseStamped>

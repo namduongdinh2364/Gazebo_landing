@@ -31,8 +31,8 @@
  ******************************************************************************/ 
 #define ROUND2(x)    std::round(x * 100) / 100
 #define ROUND3(x)    std::round(x * 1000) / 1000
-#define IDLOW    23
-#define IDLARGE    25
+#define IDLOW    10
+#define IDLARGE    10
 #define SWITCH_ALTITUDE    3
 
 using namespace std;
@@ -63,7 +63,7 @@ Matx33d intrinsic_matrix;
 Ptr<aruco::DetectorParameters> detector_params;
 Ptr<cv::aruco::Dictionary> dictionary;
 /**/
-uint8_t switch_ID      = 25;
+uint8_t switch_ID      = 10;
 
 /******************************************************************************* 
  *                                  Code 
@@ -178,12 +178,12 @@ void callback(const ImageConstPtr &image_msg)
             if (SWITCH_ALTITUDE > translation_vectors[0](2))
             {
                 switch_ID = IDLOW;
-                marker_size = 0.2;
+                marker_size = 1.0;
             }
             else
             {
                 switch_ID = IDLARGE;
-                marker_size = 0.5;
+                marker_size = 1.0;
             }
             ROS_INFO("x: [%f]", translation_vectors[i](0));
             ROS_INFO("y: [%f]", translation_vectors[i](1));

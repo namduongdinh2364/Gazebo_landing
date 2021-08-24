@@ -67,7 +67,7 @@ static char var_active_status[20];
 static double x, y, z;
 static double x_ = 0, y_ = 0, z_ = 0;
 ofstream outfile0, outfile1, outfile2;
-Matrix3f R, cv_rotation, cam2imu_rotation;
+Matrix3f R, cv_rotation, cam2imu_rotation, cam2imu_rotation_april;
 Vector3f positionbe, position_cam, positionaf, point_change, positionaf_change;
 geometry_msgs::PoseStamped pose;
 geometry_msgs::PoseStamped vlocal_pose;
@@ -215,6 +215,8 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         // Quaternionf quat;
         cam2imu_rotation << -0.0001 , -1 , 0 , -1 , 0 , 0 ,-0.0001 , 0 , -1;
 
+        cam2imu_rotation_april << 0 , 1 , 0 , -1 , 0 , 0 ,0 , 0 , 1;
+
         position_cam[0] = (msg->transforms[0].transform.translation.x);
         position_cam[1] = (msg->transforms[0].transform.translation.y);
         position_cam[2] = (msg->transforms[0].transform.translation.z);
@@ -223,6 +225,8 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         // yq = msg->transforms[0].transform.rotation.y;
         // zq = msg->transforms[0].transform.rotation.z;
         // wq = msg->transforms[0].transform.rotation.w;
+
+        // position_cam = cam2imu_rotation_april*position_cam;
         /* Aruco ----> Drone */
         positionbe = cam2imu_rotation*position_cam;
         /* Drone ----> NEU */
@@ -260,8 +264,8 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         }
 
         // Aruco_check_Area(position_cam);
-
         if (20 >= abs(alpha) && vlocal_pose.pose.position.z > (HeightChangeAngle + 1))
+        // if (vlocal_pose.pose.position.z > (HeightChangeAngle + 1))
         {
             cout <<"----------------------------" << endl;
             cout << positionaf_change[0]<< "--" << positionaf_change[1] << "--"<< positionaf_change[2] << endl;
@@ -272,14 +276,15 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
             pose.pose.position.z = HeightChangeAngle;
         }
         else if (10 >= abs(alpha) && vlocal_pose.pose.position.z <= (HeightChangeAngle + 1))
+        // else if (vlocal_pose.pose.position.z <= (HeightChangeAngle + 1))
         {
             pose.pose.position.x = x;
             pose.pose.position.y = y;
-            if (vlocal_pose.pose.position.z >PRECISION(position_cam[2]) + 0.7)
+            if (vlocal_pose.pose.position.z >PRECISION(z) + 0.8)
             {
-                if (pose.pose.position.z <= PRECISION(position_cam[2]) + 0.5)
+                if (pose.pose.position.z <= PRECISION(z) + 0.5)
                 {
-                    pose.pose.position.z = PRECISION(position_cam[2]) + 0.5;
+                    pose.pose.position.z = PRECISION(z) + 0.5;
                 }
                 else
                 {
@@ -309,7 +314,7 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
 
         cout<<"Aruco2Cam  : " << PRECISION(position_cam[0]) <<'\t'<< PRECISION(position_cam[1]) << '\t' << PRECISION(position_cam[2]) << endl;
         cout<<"Aruco2Drone: " << PRECISION(positionbe[0]) <<'\t'<< PRECISION(positionbe[1]) << '\t' << PRECISION(positionbe[2]) << endl;
-        cout<<"Aruco2NEU  : " << PRECISION(x_) <<'\t'<< PRECISION(y_) << '\t' << PRECISION(z_) << endl;
+        cout<<"Aruco2NEU  : " << x <<'\t'<< y << '\t' << z << endl;
         cout<<"Drone      : " << PRECISION(vlocal_pose.pose.position.x) << "\t" << PRECISION(vlocal_pose.pose.position.y) << "\t" << PRECISION(vlocal_pose.pose.position.z) << endl;
         cout << "===================================================" << endl;
     }

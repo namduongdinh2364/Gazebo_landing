@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(calculationps)
+project(kalman_filter_ex)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -23,12 +23,11 @@ catkin_install_python(PROGRAMS
 ###########
 
 include_directories(
-        ${catkin_INCLUDE_DIRS}
+        ${catkin_INCLUDE_DIRS} src
 )
-file(GLOB SOURCES src/calculationps.cpp)
+file(GLOB SOURCES src/*.cpp)
 add_executable(${PROJECT_NAME}_node ${SOURCES})
 target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
         )
-
 set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")

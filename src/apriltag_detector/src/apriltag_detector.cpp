@@ -37,51 +37,43 @@ extern "C" {
 #include "apriltag_pose.h"
 }
 
-#define tagSIZE    0.355
-#define FX         1179.598752
-#define FY         1177.000389
-#define CX         928.099247
-#define CY         558.635461
+#define tagSIZE    0.9
+// #define FX         322.282410
+// #define FY         322.282410
+// #define CX         558.099247
+// #define CY         558.635461
 
 apriltag_detector_t *td;
 apriltag_detection_info_t info;
 
-/******************************************************************************* 
- *                               Definitions 
- ******************************************************************************/ 
 #define ROUND2(x)    std::round(x * 100) / 100
 #define ROUND3(x)    std::round(x * 1000) / 1000
-#define IDLOW    23
-#define IDLARGE    25
-#define SWITCH_ALTITUDE    3
+#define IDLOW    22
+#define IDLARGE    16
+#define SWITCH_ALTITUDE    5
 
 using namespace std;
 using namespace sensor_msgs;
 using namespace cv;
-/******************************************************************************* 
- *                                  Topic
- ******************************************************************************/ 
+
 /* Publisher */
 image_transport::Publisher read_frame_pub;
 ros::Publisher tf_list_pub_;
 
-/******************************************************************************* 
- *                                 Variables 
- ******************************************************************************/
 /* Define global variables */
 bool enable_blur;
 int blur_window_size;
 int image_fps;
 int image_width = 1920;
 int image_height = 1080;
-uint8_t switch_ID = 25;
+uint8_t switch_ID = IDLARGE;
 /* Offset bwt the center of markers in coordinate marker*/
 float marker_size = tagSIZE;
+float marker_fx;
+float marker_fy;
+float marker_cx;
+float marker_cy;
 string marker_tf_prefix;
-
-/******************************************************************************* 
- *                                  Code 
- ******************************************************************************/ 
 
 void init_handler(int x) {
     /* disconnect and exit gracefully */
@@ -89,13 +81,11 @@ void init_handler(int x) {
     exit(0);
 }
 
-tf2::Vector3 cv_vector3d_to_tf_vector3(const Vec3d &vec)
-{
+tf2::Vector3 cv_vector3d_to_tf_vector3(const Vec3d &vec) {
     return {vec[0], vec[1], vec[2]};
 }
 
-tf2::Quaternion cv_vector3d_to_tf_quaternion(const Vec3d &rotation_vector)
-{
+tf2::Quaternion cv_vector3d_to_tf_quaternion(const Vec3d &rotation_vector) {
     // Mat rotation_matrix; 
     auto ax    = rotation_vector[0], ay = rotation_vector[1], az = rotation_vector[2];
     auto angle = sqrt(ax * ax + ay * ay + az * az);
@@ -111,16 +101,14 @@ tf2::Quaternion cv_vector3d_to_tf_quaternion(const Vec3d &rotation_vector)
     return q;
 }
 
-tf2::Transform create_transform(const Vec3d &tvec, const Vec3d &rotation_vector)
-{
+tf2::Transform create_transform(const Vec3d &tvec, const Vec3d &rotation_vector) {
     tf2::Transform transform;
     transform.setOrigin(cv_vector3d_to_tf_vector3(tvec));
     transform.setRotation(cv_vector3d_to_tf_quaternion(rotation_vector));
     return transform;
 }
 
-void callback(const ImageConstPtr &image_msg)
-{
+void callback(const ImageConstPtr &image_msg) {
     string frame_id = image_msg->header.frame_id;
     auto image = cv_bridge::toCvShare(image_msg)->image;    /* To process */
     vector<int> ids_m;
@@ -129,8 +117,7 @@ void callback(const ImageConstPtr &image_msg)
     vector<vector<Point2f>> corners_cvt;
 
     /* Smooth the image to improve detection results */
-    if (enable_blur)
-    {
+    if (enable_blur) {
         GaussianBlur(image, image, Size(blur_window_size, blur_window_size), 0, 0);
     }
 
@@ -138,8 +125,7 @@ void callback(const ImageConstPtr &image_msg)
     cvtColor(image, gray, COLOR_BGR2GRAY);
 
     // Make an image_u8_t header for the Mat data
-    image_u8_t im =
-    {
+    image_u8_t im = {
         .width = gray.cols,
         .height = gray.rows,
         .stride = gray.cols,
@@ -148,24 +134,30 @@ void callback(const ImageConstPtr &image_msg)
     zarray_t *detections = apriltag_detector_detect(td, &im);
 
     // Draw detection outlines
-    for (int i = 0; i < zarray_size(detections); i++)
-    {
+    for (int i = 0; i < zarray_size(detections); i++) {
         apriltag_detection_t *det;
         apriltag_pose_t pose;
         zarray_get(detections, i, &det);
-        if (det->id == 8)
-        {
+        if (det->id == switch_ID) {
             Mat rotation_matrix(3, 3, CV_64F);
             Mat rvec1;
             Vec3d rotation_vector, translation_vector;
 
-            printf("detection %3d: id %4d, hamming %d, size: %f\n", i, det->id, det->hamming, marker_size);
+            printf("detection %3d: id %4d, hamming %d, size: %f\n", i, det->id, det->hamming, info.tagsize);
             info.det = det;
             double err = estimate_tag_pose(&info, &pose);
             cout << "Pose estimation:" << endl;
             cout << "x: " << pose.t->data[0] << endl;
             cout << "y: " << pose.t->data[1] << endl;
             cout << "z: " << pose.t->data[2] << endl;
+            if (pose.t->data[2]<= SWITCH_ALTITUDE) {
+                switch_ID = IDLOW;
+                info.tagsize = 0.09;
+            }
+            if (pose.t->data[2]>= SWITCH_ALTITUDE) {
+                switch_ID = IDLARGE;
+                info.tagsize = 0.9;
+            }
 
             rotation_matrix.at<double>(0,0) = pose.R->data[0];
             rotation_matrix.at<double>(0,1) = pose.R->data[1];
@@ -234,8 +226,7 @@ void callback(const ImageConstPtr &image_msg)
             tf_msg_list.transforms.push_back(tf_msg);
             br.sendTransform(tf_msg);
 
-            if(tf_msg_list.transforms.size())
-            {
+            if(tf_msg_list.transforms.size()) {
                 tf_list_pub_.publish(tf_msg_list);
             }
         }
@@ -244,8 +235,7 @@ void callback(const ImageConstPtr &image_msg)
     apriltag_detections_destroy(detections);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     signal(SIGINT, init_handler);
     getopt_t *getopt = getopt_create();
 
@@ -312,13 +302,17 @@ int main(int argc, char *argv[])
     nh.getParam("tf_prefix", marker_tf_prefix);
     nh.getParam("enable_blur", enable_blur);
     nh.getParam("blur_window_size", blur_window_size);
+    nh.getParam("marker_fx", marker_fx);
+    nh.getParam("marker_fy", marker_fy);
+    nh.getParam("marker_cx", marker_cx);
+    nh.getParam("marker_cy", marker_cy);
 
     /* First create an apriltag_detection_info_t struct using your known parameters. */
     info.tagsize = marker_size;
-    info.fx = FX;
-    info.fy = FY;
-    info.cx = CX;
-    info.cy = CY;
+    info.fx = marker_fx;
+    info.fy = marker_fy;
+    info.cx = marker_cx;
+    info.cy = marker_cy;
 
     /* camera */
     ros::Subscriber rgb_sub = nh.subscribe(rgb_topic.c_str(), queue_size, callback);

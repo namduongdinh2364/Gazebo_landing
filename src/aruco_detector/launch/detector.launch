@@ -2,7 +2,7 @@
 <launch>
     <arg name="use_rviz" default="False" />
     <arg name="use_camera" default="False" />
-    <arg name="image_width" default="1920" /> 
+    <arg name="image_width" default="1920" />
     <arg name="image_height" default="1080" />
     <arg name="camera" default="/camera/color/image_raw" />
     <arg name="camera_info" default="/camera/color/camera_info" />

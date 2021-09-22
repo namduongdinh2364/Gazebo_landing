@@ -28,9 +28,14 @@
 
 #define ROUND2(x)    std::round(x * 100) / 100
 #define ROUND3(x)    std::round(x * 1000) / 1000
-#define IDLOW               23
+
+/**
+ * ID of marker
+ * - marker size more than is IDLARGE 
+ */
 #define IDLARGE             23
-#define SWITCH_ALTITUDE     3
+#define IDLOW               23
+#define SWITCH_HEIGHT       3
 
 using namespace std;
 using namespace sensor_msgs;
@@ -48,6 +53,7 @@ int blur_window_size;
 int image_fps;
 int image_width = 1920;
 int image_height = 1080;
+
 /* Offset bwt the center of markers in coordinate marker*/
 float marker_size = 0.5;
 string marker_tf_prefix;
@@ -56,7 +62,10 @@ Matx33d intrinsic_matrix;
 Ptr<aruco::DetectorParameters> detector_params;
 Ptr<cv::aruco::Dictionary> dictionary;
 
-uint8_t switch_ID      = 23;
+/**
+ * ID marker to switch if approach value height be set
+ */
+uint8_t switch_ID = 23;
 
 void int_handler(int x) {
     /* disconnect and exit gracefully */
@@ -79,14 +88,7 @@ tf2::Quaternion cv_vector3d_to_tf_quaternion(const Vec3d &rotation_vector) {
     auto qw    = cosa;
     tf2::Quaternion q;
     q.setValue(qx, qy, qz, qw);
-    /*
-    double roll, pitch, yaw;
-    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-    roll  = roll*(180/3.14);
-    pitch = pitch*(180/3.14);
-    yaw   = yaw*(180/3.14);
-    // cout << "Roll: " << roll << ", Pitch: " << pitch << ", Yaw: " << yaw << endl;
-    */
+
     return q;
 }
 
@@ -144,13 +146,13 @@ void callback(const ImageConstPtr &image_msg) {
                 corners_cvt.push_back(corners[i]);
             }
         }
-        /*Compute poses of markers*/
+        /* Compute poses of markers */
         vector<Vec3d> rotation_vectors, translation_vectors;
         aruco::estimatePoseSingleMarkers(corners_cvt, marker_size, intrinsic_matrix, distortion_coefficients,
                                          rotation_vectors, translation_vectors);
 
         for (auto i = 0; i < rotation_vectors.size(); ++i) {
-            if (SWITCH_ALTITUDE > translation_vectors[0](2)) {
+            if (SWITCH_HEIGHT > translation_vectors[0](2)) {
                 switch_ID = IDLOW;
                 marker_size = 0.5;
             }
@@ -162,11 +164,11 @@ void callback(const ImageConstPtr &image_msg) {
             ROS_INFO("y: [%f]", translation_vectors[i](1));
             ROS_INFO("z: [%f]", translation_vectors[i](2));
         }
-        /*Publish TFs for each of the markers*/
+        /* Publish TFs for each of the markers */
         static tf2_ros::TransformBroadcaster br;
         auto stamp = ros::Time::now();
 
-        /*Create and publish tf message for each marker*/
+        /* Create and publish tf message for each marker */
         tf2_msgs::TFMessage tf_msg_list;
 
         for (auto i = 0; i < rotation_vectors.size(); ++i) {
@@ -247,7 +249,7 @@ int main(int argc, char **argv) {
     ros::Subscriber rgb_sub = nh.subscribe(rgb_topic.c_str(), queue_size, callback);
     ros::Subscriber rgb_info_sub = nh.subscribe(rgb_info_topic.c_str(), queue_size, callback_camera_info);
     // ros::Subscriber parameter_sub = nh.subscribe("/update_params", queue_size, update_params_cb);
-    /*Publisher:*/
+    /* Publisher */
     image_transport::ImageTransport it(nh);
     read_frame_pub  = it.advertise("/camera/color/image_raw", 10);
     tf_list_pub_    = nh.advertise<tf2_msgs::TFMessage>("/tf_list", 10);

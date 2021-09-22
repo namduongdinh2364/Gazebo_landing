@@ -48,9 +48,14 @@ apriltag_detection_info_t info;
 
 #define ROUND2(x)    std::round(x * 100) / 100
 #define ROUND3(x)    std::round(x * 1000) / 1000
+
+/**
+ * ID of marker
+ * - marker size more than is IDLARGE 
+ */
 #define IDLOW    22
 #define IDLARGE    16
-#define SWITCH_ALTITUDE    5
+#define SWITCH_HEIGHT    5
 
 using namespace std;
 using namespace sensor_msgs;
@@ -124,7 +129,7 @@ void callback(const ImageConstPtr &image_msg) {
     Mat gray;
     cvtColor(image, gray, COLOR_BGR2GRAY);
 
-    // Make an image_u8_t header for the Mat data
+    /* Make an image_u8_t header for the Mat data */
     image_u8_t im = {
         .width = gray.cols,
         .height = gray.rows,
@@ -150,11 +155,11 @@ void callback(const ImageConstPtr &image_msg) {
             cout << "x: " << pose.t->data[0] << endl;
             cout << "y: " << pose.t->data[1] << endl;
             cout << "z: " << pose.t->data[2] << endl;
-            if (pose.t->data[2]<= SWITCH_ALTITUDE) {
+            if (pose.t->data[2]<= SWITCH_HEIGHT) {
                 switch_ID = IDLOW;
                 info.tagsize = 0.09;
             }
-            if (pose.t->data[2]>= SWITCH_ALTITUDE) {
+            if (pose.t->data[2]>= SWITCH_HEIGHT) {
                 switch_ID = IDLARGE;
                 info.tagsize = 0.9;
             }

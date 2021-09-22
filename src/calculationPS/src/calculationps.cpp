@@ -189,21 +189,30 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
             y_ = PRECISION(y_);
             z_ = PRECISION(z_);
         }
-
+        /** used for control with pose
         radius = (float)sqrt(pow(positionaf[0],2) + pow(positionaf[1],2));
+        if (radius <= DISTANCE) {
+            pose.pose.position.x = x;
+            pose.pose.position.y = y;
+            if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
+                if (pose.pose.position.z <= PRECISION(z) + 0.5) {
+                    pose.pose.position.z = PRECISION(z) + 0.5;
+                } else {
+                    pose.pose.position.z = vlocal_pose.pose.position.z - 2.0;
+                }
+            } else {
+                vLand = true;
+            }
+        } */
 
-        if (30 >= abs(alpha) && vlocal_pose.pose.position.z > (HeightChangeAngle + 1))
-        {
+        if (30 >= abs(alpha) && vlocal_pose.pose.position.z > (HeightChangeAngle + 1)) {
             pose.pose.position.x = x;
             pose.pose.position.y = y;
             pose.pose.position.z = HeightChangeAngle;
-        }
-        // if (radius <= DISTANCE)
-        // {
-        else if (10 >= abs(alpha) && vlocal_pose.pose.position.z <= (HeightChangeAngle + 1))
-        {
+        } else if (10 >= abs(alpha) && vlocal_pose.pose.position.z <= (HeightChangeAngle + 1)) {
             pose.pose.position.x = x;
             pose.pose.position.y = y;
+
             if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
                 if (pose.pose.position.z <= PRECISION(z) + 0.5) {
                     pose.pose.position.z = PRECISION(z) + 0.5;
@@ -228,6 +237,9 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         pose.pose.orientation.w = wq;
 
         detect = true;
+        /**
+         * stable param
+        */
         number_check ++;
         if(number_check == 3) {
             LOCK = 1;
@@ -343,6 +355,11 @@ int main(int argc, char **argv) {
         if (vend == false) {
             local_pos_pub1.publish(pose);
         }
+        /**
+         * If can't detect marker during 2 second.
+         * if number of detect failed more than maxium, 
+         * Landing will be called.
+         */
         if( ros::Time::now() - begin_request > ros::Duration(2.0) ) {
             if (active_2s_ago == true) {
                 detectfailedrepeat ++;

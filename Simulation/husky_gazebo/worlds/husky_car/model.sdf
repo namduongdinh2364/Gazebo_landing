@@ -135,7 +135,7 @@
         <pose>0.0812 0 0.445 0 -0 0</pose>
         <geometry>
           <box>
-            <size>1.5 1.5 0.01</size>
+            <size>1.7 1.7 0.02</size>
           </box>
         </geometry>
         <material>
@@ -900,14 +900,14 @@
       <visual name='visual'>
         <geometry>
           <box>
-            <size>1 1 0.1</size>
+            <size>0.5 0.5 0.12</size>
           </box>
         </geometry>
         <material>
           <script>
-            <uri>model://aruco_visual_marker_10/materials/scripts</uri>
-            <uri>model://aruco_visual_marker_10/materials/textures</uri>
-            <name>ArucoVisualMarker10/Marker</name>
+            <uri>model://apriltag_visual_marker_16_nested/materials/scripts</uri>
+            <uri>model://apriltag_visual_marker_16_nested/materials/textures</uri>
+            <name>ApriltagVisualMarker16n/Marker</name>
           </script>
           <ambient>1 1 1 1</ambient>
           <diffuse>1 1 1 1</diffuse>
@@ -927,7 +927,7 @@
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
-            <size>1 1 0.1</size>
+            <size>0.5 0.5 0.12</size>
           </box>
         </geometry>
       </collision>

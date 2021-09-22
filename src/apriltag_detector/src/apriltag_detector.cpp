@@ -155,6 +155,7 @@ void callback(const ImageConstPtr &image_msg) {
             cout << "x: " << pose.t->data[0] << endl;
             cout << "y: " << pose.t->data[1] << endl;
             cout << "z: " << pose.t->data[2] << endl;
+
             if (pose.t->data[2]<= SWITCH_HEIGHT) {
                 switch_ID = IDLOW;
                 info.tagsize = 0.09;

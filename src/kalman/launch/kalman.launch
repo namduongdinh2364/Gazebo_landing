@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!-- KF tracker-->
+    <arg name="drone_frame" default="base_link"/>
+
+    <node pkg="kalman_filter_ex" name="kalman_filter_ex_node" type="node" output="screen">
+      <remap from="measurement/pose" to="tag/pose"/>
+      <param name="tracking_frame_id" value="$(arg drone_frame)"/>
+      <param name="dt_pred" value="0.05"/> <!-- rate of prediction step -->
+      <param name="do_kf_update_step" value="true"/> <!-- IMPRTANT keep true-->
+      <param name="q_std" value="1.0"/> <!-- Standard deviation of the process noise-->
+      <param name="r_std" value="0.1"/> <!-- Standard deviation of the observation noise-->
+      <param name="measurement_off_time" value="2.0"/> <!-- Maximum time (seconds) with no measurement before stopping the filter -->
+      <param name="print_debug_msg" value="false"/>
+  </node>
+
+</launch>

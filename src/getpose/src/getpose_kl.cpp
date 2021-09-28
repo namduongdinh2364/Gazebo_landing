@@ -17,7 +17,6 @@
 #include <sensor_msgs/Imu.h>
 #include "std_msgs/String.h"
 #include "std_msgs/Float32.h"
-#include "Kalmanfilter.h"
 /******************************************************************************* 
  *                               Definitions
  ******************************************************************************/ 
@@ -30,13 +29,6 @@
 
 using namespace std;
 using namespace Eigen;
-
-/******************************************************************************* 
- *                                  Object
- ******************************************************************************/
-KalmanPID kalman_x = KalmanPID(0, 5, 1.5);
-KalmanPID kalman_y = KalmanPID(0, 5, 1.5);
-KalmanPID kalman_z = KalmanPID(0, 5, 1.5);
 
 /******************************************************************************* 
  *                                 Variables

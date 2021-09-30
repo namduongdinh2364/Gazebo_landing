@@ -188,7 +188,7 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
             y_ = PRECISION(y_);
             z_ = PRECISION(z_);
         }
-        /** used for control with pose
+        /** used for control with pose */
         radius = (float)sqrt(pow(positionaf[0],2) + pow(positionaf[1],2));
         if (radius <= DISTANCE) {
             pose.pose.position.x = x;
@@ -202,26 +202,27 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
             } else {
                 vLand = true;
             }
-        } */
+        } 
 
-        if (30 >= abs(alpha) && vlocal_pose.pose.position.z > (HeightChangeAngle + 1)) {
-            pose.pose.position.x = x;
-            pose.pose.position.y = y;
-            pose.pose.position.z = HeightChangeAngle;
-        } else if (10 >= abs(alpha) && vlocal_pose.pose.position.z <= (HeightChangeAngle + 1)) {
-            pose.pose.position.x = x;
-            pose.pose.position.y = y;
+        // if (30 >= abs(alpha) && vlocal_pose.pose.position.z > (HeightChangeAngle + 1)) {
+        //     pose.pose.position.x = x;
+        //     pose.pose.position.y = y;
+        //     pose.pose.position.z = HeightChangeAngle;
+        // } else if (10 >= abs(alpha) && vlocal_pose.pose.position.z <= (HeightChangeAngle + 1)) {
+        //     pose.pose.position.x = x;
+        //     pose.pose.position.y = y;
 
-            if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
-                if (pose.pose.position.z <= PRECISION(z) + 0.5) {
-                    pose.pose.position.z = PRECISION(z) + 0.5;
-                } else {
-                    pose.pose.position.z = vlocal_pose.pose.position.z - 2.0;
-                }
-            } else {
-                vLand = true;
-            }
-        } else {
+        //     if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
+        //         if (pose.pose.position.z <= PRECISION(z) + 0.5) {
+        //             pose.pose.position.z = PRECISION(z) + 0.5;
+        //         } else {
+        //             pose.pose.position.z = vlocal_pose.pose.position.z - 2.0;
+        //         }
+        //     } else {
+        //         vLand = true;
+        //     }
+        // } 
+        else {
             pose.pose.position.x = x;
             pose.pose.position.y = y;
             pose.pose.position.z = vlocal_pose.pose.position.z;
@@ -245,10 +246,16 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
             number_check = 0;
         }
 
-        cout<<"Marker2Cam  : " << PRECISION(position_cam[0]) <<'\t'<< PRECISION(position_cam[1]) << '\t' << PRECISION(position_cam[2]) << endl;
-        cout<<"Marker2Drone: " << PRECISION(positionbe[0]) <<'\t'<< PRECISION(positionbe[1]) << '\t' << PRECISION(positionbe[2]) << endl;
-        cout<<"Marker2NEU  : " << x <<'\t'<< y << '\t' << z << endl;
-        cout<<"Drone      : " << PRECISION(vlocal_pose.pose.position.x) << "\t" << PRECISION(vlocal_pose.pose.position.y) << "\t" << PRECISION(vlocal_pose.pose.position.z) << endl;
+        cout<< "Marker2Cam : " << PRECISION(position_cam[0]) <<'\t'
+                                << PRECISION(position_cam[1]) << '\t'
+                                << PRECISION(position_cam[2]) << endl;
+        cout<< "Marker2Drone : " << PRECISION(positionbe[0]) <<'\t'
+                                << PRECISION(positionbe[1]) << '\t'
+                                << PRECISION(positionbe[2]) << endl;
+        cout<< "Marker2NEU : " << x <<'\t'<< y << '\t' << z << endl;
+        cout<< "Drone : " << PRECISION(vlocal_pose.pose.position.x) << "\t"
+                                << PRECISION(vlocal_pose.pose.position.y) << "\t"
+                                << PRECISION(vlocal_pose.pose.position.z) << endl;
         cout << "===================================================" << endl;
     }
 }
@@ -297,6 +304,7 @@ void landing_start() {
     vend      = true;
     baygio    = time(0);
     ltime     = localtime(&baygio);
+
     turn_off_motors();
     ROS_INFO("AUTO LANDING MODE is request");
     cout << "\n\x1B[36m========================================\033[0m"<< endl;
@@ -307,6 +315,7 @@ void landing_start() {
     cout << "| Total :" << ltime->tm_min - minutes <<" minute "<< ltime->tm_sec - seconds << " Second" << endl;
     cout << "========================================"<< endl;
     cout<<"Drone : x = " << vlocal_pose.pose.position.x << " y = " << vlocal_pose.pose.position.y << " z = " << vlocal_pose.pose.position.z << endl;
+
     exit(-1);
 }
 

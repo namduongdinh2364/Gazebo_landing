@@ -46,10 +46,6 @@ geometry_msgs::PoseStamped vlocal_pose;
 static int number_check = 0;
 static int LOCK = 10;
 
-/******************************************************************************* 
- *                                  Code
- ******************************************************************************/ 
-
 /* storing gps data in pointer */
 void mavros_Pose_Callback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
     vlocal_pose=*msg;
@@ -80,8 +76,9 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
 {
     double xq,yq,zq,wq;
     Quaternionf quat;
+    /* Matrix transform from camera to IMU */
     cam2imu_rotation << -0.0001 , -1 , 0 , -1 , 0 , 0 ,-0.0001 , 0 , -1;
-
+    /* Get data */
     position_cam[0] = (msg->transforms[0].transform.translation.x);
     position_cam[1] = (msg->transforms[0].transform.translation.y);
     position_cam[2] = (msg->transforms[0].transform.translation.z);
@@ -90,7 +87,7 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
     yq = msg->transforms[0].transform.rotation.y;
     zq = msg->transforms[0].transform.rotation.z;
     wq = msg->transforms[0].transform.rotation.w;
-
+    /* Skip calculation to stable param */
     if (LOCK > 0) {
         /* Aruco ----> Drone */
         positionbe = cam2imu_rotation*position_cam;
@@ -112,6 +109,7 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
     pose.pose.orientation.z = zq;
     pose.pose.orientation.w = wq;
 
+    /* Need to be improved */
     detect = true;
     LOCK = 0;
     number_check ++;
@@ -120,10 +118,18 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         number_check = 0;
     }
 
-    cout<<"Marker2Cam  : " << PRECISION(position_cam[0]) <<'\t'<< PRECISION(position_cam[1]) << '\t' << PRECISION(position_cam[2]) << endl;
-    cout<<"Marker2Drone: " << PRECISION(positionbe[0]) <<'\t'<< PRECISION(positionbe[1]) << '\t' << PRECISION(positionbe[2]) << endl;
-    cout<<"Marker2NEU  : " << PRECISION(x) <<'\t'<< PRECISION(y) << '\t' << PRECISION(z) << endl;
-    cout<<"Drone      : " << PRECISION(vlocal_pose.pose.position.x) << "\t" << PRECISION(vlocal_pose.pose.position.y) << "\t" << PRECISION(vlocal_pose.pose.position.z) << endl;
+    cout<<"Marker2Cam: "<< PRECISION(position_cam[0]) << '\t'
+                            << PRECISION(position_cam[1]) << '\t'
+                            << PRECISION(position_cam[2]) << endl;
+    cout<<"Marker2Drone: "<< PRECISION(positionbe[0]) << '\t'
+                            << PRECISION(positionbe[1]) << '\t'
+                            << PRECISION(positionbe[2]) << endl;
+    cout<<"Marker2NEU : "<< PRECISION(x) << '\t'
+                            << PRECISION(y) << '\t'
+                            << PRECISION(z) << endl;
+    cout<<"Drone : "<< PRECISION(vlocal_pose.pose.position.x) << "\t"
+                            << PRECISION(vlocal_pose.pose.position.y) << "\t"
+                            << PRECISION(vlocal_pose.pose.position.z) << endl;
 }
 
 void local_set_pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
@@ -131,9 +137,7 @@ void local_set_pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
         pose.pose.position.x= msg->pose.position.x;
         pose.pose.position.y= msg->pose.position.y;
         pose.pose.position.z= msg->pose.position.z;
-    }
-
-    else {
+    } else {
         pose.pose.position.x= x;
         pose.pose.position.y= y;
         pose.pose.position.z= z;

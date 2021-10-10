@@ -34,8 +34,8 @@
  * - marker size more than is IDLARGE 
  */
 #define IDLARGE             23
-#define IDLOW               23
-#define SWITCH_HEIGHT       3
+#define IDLOW               10
+#define SWITCH_HEIGHT       9
 
 
 using namespace std;
@@ -155,7 +155,7 @@ void callback(const ImageConstPtr &image_msg) {
         for (auto i = 0; i < rotation_vectors.size(); ++i) {
             if (SWITCH_HEIGHT > translation_vectors[0](2)) {
                 switch_ID = IDLOW;
-                marker_size = 0.5;
+                marker_size = 0.2;
             }
             else {
                 switch_ID = IDLARGE;

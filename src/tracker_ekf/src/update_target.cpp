@@ -1,31 +1,20 @@
 #include "ros/ros.h"
 #include <math.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2/LinearMath/Vector3.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Transform.h>
 #include <tf2_msgs/TFMessage.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <iostream>
-#include <ros/ros.h>
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
 #include <ctime>
-#include <eigen3/Eigen/Core>
-#include <mavros_msgs/CommandBool.h>
 #include <eigen3/Eigen/Geometry>
-#include <sensor_msgs/Imu.h>
 #include "std_msgs/String.h"
 #include "std_msgs/Float32.h"
 #include <csignal>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 #define PRECISION(x)    round(x * 100) / 100
-#define DISTANCE        0.3
-#define NSTEP           4
 #define PI              3.14159265
-#define HeightChangeAngle           7
 #define IncreaseHeightNotDetect     1
 #define MaxRepeatDetections         2
 
@@ -44,9 +33,7 @@ static int LOCK                  = 10;
 time_t baygio                    = time(0);
 tm *ltime                        = localtime(&baygio);
 static double x, y, z;
-static double x_ = 0, y_ = 0, z_ = 0;
-Matrix3f R, cam2imu_rotation, cam2imu_rotation_april;
-Vector3f positionbe, position_cam, positionaf, point_change, positionaf_change;
+Vector3f position_cam, positionaf;
 geometry_msgs::PoseStamped pose;
 geometry_msgs::PoseStamped vlocal_pose;
 int vbegin    = 2;
@@ -77,28 +64,6 @@ void mavrosPoseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
     vlocal_pose=*msg;
 }
 
-void imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
-{
-    double x,y,z,w;
-    Quaternionf quat;
-
-    x = msg->orientation.x;
-    y = msg->orientation.y;
-    z = msg->orientation.z;
-    w = msg->orientation.w;
-    /*making a quaternion of position*/
-    quat = Eigen::Quaternionf(w,x,y,z);
-    /*making rotation matrix from quaternion*/
-    R = quat.toRotationMatrix();
-    tf2::Quaternion q;
-    q.setValue(x, y, z, w);
-    double roll, pitch, yaw;
-    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-    roll  = roll*(180/3.14);
-    pitch = pitch*(180/3.14);
-    yaw   = yaw*(180/3.14);
-}
-
 /**
  * @brief 
  * 
@@ -106,7 +71,7 @@ void imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
  *
  * @return 
  */
-static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
+void set_target_position_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
 {
     begin_request = ros::Time::now();
     active_2s_ago = true;
@@ -126,34 +91,16 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
         }
 
         double xq,yq,zq,wq;
-        Quaternionf quat;
-        Matrix3f R1;
-        cam2imu_rotation << -0.0001 , -1 , 0 , -1 , 0 , 0 ,-0.0001 , 0 , -1;
-        position_cam[0] = (msg->transforms[0].transform.translation.x);
-        position_cam[1] = (msg->transforms[0].transform.translation.y);
-        position_cam[2] = (msg->transforms[0].transform.translation.z);
+        position_cam[0] = msg->pose.pose.position.x;
+        position_cam[1] = msg->pose.pose.position.y;
+        position_cam[2] = msg->pose.pose.position.z;
 
-        xq = msg->transforms[0].transform.rotation.x;
-        yq = msg->transforms[0].transform.rotation.y;
-        zq = msg->transforms[0].transform.rotation.z;
-        wq = msg->transforms[0].transform.rotation.w;
+        xq = msg->pose.pose.orientation.x;
+        yq = msg->pose.pose.orientation.y;
+        zq = msg->pose.pose.orientation.z;
+        wq = msg->pose.pose.orientation.w;
 
-        cam2imu_rotation_april << 0 , 1 , 0 , -1 , 0 , 0 ,0 , 0 , 1;
-        // position_cam = cam2imu_rotation_april*position_cam;
-        /* Aruco ----> Drone */
-        positionbe = cam2imu_rotation*position_cam;
-        /* Drone ----> NEU */
-        positionaf = R*positionbe;
-        // positionaf = position_cam;
-        /* update the position */
-        double alpha, OR, A1E, Y2, X2, Z2;
-        OR = (float)sqrt(pow(positionbe[0],2) + pow(positionbe[1],2));
-        alpha = atan (OR/positionbe[2]) * 180 / PI;
-        A1E = (OR *( abs(positionbe[2]) - HeightChangeAngle )) / abs(positionbe[2]);
-        point_change[1] = (positionbe[1] * A1E) / OR;
-        point_change[0] = (positionbe[0] * A1E) / OR;
-        point_change[2] = positionbe[2] + HeightChangeAngle;
-        positionaf_change = R*point_change;
+        positionaf = position_cam;
         if (LOCK > 0) {
             x = positionaf[0];
             y = positionaf[1];
@@ -162,57 +109,21 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
             x = PRECISION(x);
             y = PRECISION(y);
             z = PRECISION(z);
-
-            x_ = positionaf_change[0]+vlocal_pose.pose.position.x;
-            y_ = positionaf_change[1]+vlocal_pose.pose.position.y;
-            z_ = positionaf_change[2]+vlocal_pose.pose.position.z;
-            x_ = PRECISION(x_);
-            y_ = PRECISION(y_);
-            z_ = PRECISION(z_);
         }
         /** used for control with pose */
-        radius = (float)sqrt(pow(positionaf[0] - vlocal_pose.pose.position.x,2) + pow(positionaf[1] - vlocal_pose.pose.position.y,2));
-        if (radius <= DISTANCE) {
-            pose.pose.position.x = x;
-            pose.pose.position.y = y;
-            if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
-                if (pose.pose.position.z <= PRECISION(z) + 0.5) {
-                    pose.pose.position.z = PRECISION(z) + 0.5;
-                } else {
-                    pose.pose.position.z = vlocal_pose.pose.position.z - 2.0;
-                }
+        pose.pose.position.x = x;
+        pose.pose.position.y = y;
+        if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
+            if (pose.pose.position.z <= PRECISION(z) + 0.5) {
+                pose.pose.position.z = PRECISION(z) + 0.5;
             } else {
-                vLand = true;
+                pose.pose.position.z = vlocal_pose.pose.position.z - 2.0;
             }
-        } 
-
-        // if (20 >= abs(alpha) && vlocal_pose.pose.position.z > (HeightChangeAngle + 1)) {
-        //     pose.pose.position.x = x;
-        //     pose.pose.position.y = y;
-        //     pose.pose.position.z = HeightChangeAngle;
-        // } else if (10 >= abs(alpha) && vlocal_pose.pose.position.z <= (HeightChangeAngle + 1)) {
-        //     pose.pose.position.x = x;
-        //     pose.pose.position.y = y;
-
-        //     if (vlocal_pose.pose.position.z >= PRECISION(z) + 0.9) {
-        //         if (pose.pose.position.z <= PRECISION(z) + 0.5) {
-        //             pose.pose.position.z = PRECISION(z) + 0.5;
-        //         } else {
-        //             pose.pose.position.z = vlocal_pose.pose.position.z - 2.0;
-        //         }
-        //     } else {
-        //         vLand = true;
-        //     }
-        // } 
-        else {
-            pose.pose.position.x = x;
-            pose.pose.position.y = y;
-            pose.pose.position.z = vlocal_pose.pose.position.z;
-
-            ROS_INFO("Aligning........!");
-            LOCK = 0;
+        } else {
+            vLand = true;
         }
 
+        LOCK = 0;
         pose.pose.orientation.x = xq;
         pose.pose.orientation.y = yq;
         pose.pose.orientation.z = zq;
@@ -223,17 +134,14 @@ static void get_params_cb(const tf2_msgs::TFMessage::ConstPtr& msg)
          * stable param
         */
         number_check ++;
-        if(number_check == 3) {
+        if(number_check == 10) {
             LOCK = 1;
             number_check = 0;
         }
 
-        cout<< "Marker2Cam : " << PRECISION(position_cam[0]) <<'\t'
+        cout<< "Marker2Drone : " << PRECISION(position_cam[0]) <<'\t'
                                 << PRECISION(position_cam[1]) << '\t'
                                 << PRECISION(position_cam[2]) << endl;
-        cout<< "Marker2Drone : " << PRECISION(positionbe[0]) <<'\t'
-                                << PRECISION(positionbe[1]) << '\t'
-                                << PRECISION(positionbe[2]) << endl;
         cout<< "Marker2NEU : " << x <<'\t'<< y << '\t' << z << endl;
         cout<< "Drone : " << PRECISION(vlocal_pose.pose.position.x) << "\t"
                                 << PRECISION(vlocal_pose.pose.position.y) << "\t"
@@ -312,15 +220,13 @@ int main(int argc, char **argv) {
     cout << ltime->tm_min << ":";
     cout << ltime->tm_sec << endl;
 
-    ros::init(argc, argv, "subpose_node");
+    ros::init(argc, argv, "update_target_node");
     ros::NodeHandle n;
 
-    ros::Subscriber imu_sub = n.subscribe
-                            ("/mavros/imu/data",10,imuCallback);
     ros::Subscriber gps_sub = n.subscribe
                             ("/mavros/local_position/pose",10,mavrosPoseCallback);
-    ros::Subscriber pose_sub = n.subscribe
-                            ("/tf_list", 10, get_params_cb);
+    ros::Subscriber position_target_sub = n.subscribe<geometry_msgs::PoseWithCovarianceStamped>
+                            ("kf/estimate",10, set_target_position_callback);
     ros::Subscriber local_pos_sub = n.subscribe<geometry_msgs::PoseStamped>
                             ("mavros/setpoint_position/local", 10, local_pose_callback);
     ros::Publisher local_pos_pub1 = n.advertise<geometry_msgs::PoseStamped>
@@ -343,7 +249,7 @@ int main(int argc, char **argv) {
             landing_start();
         }
         if (vend == false) {
-            // local_pos_pub1.publish(pose);
+            local_pos_pub1.publish(pose);
         }
         /**
          * If can't detect marker during 2 second.
@@ -372,3 +278,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+

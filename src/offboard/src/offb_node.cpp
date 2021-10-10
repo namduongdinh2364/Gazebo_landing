@@ -144,9 +144,9 @@ void set_target_position_callback(const geometry_msgs::PoseStamped::ConstPtr& ms
     double roll, pitch, yaw;
     tf2::Matrix3x3(q).getRPY(m_roll, m_pitch, m_yaw);
 
-    cout << "roll: " << m_roll << endl;
-    cout << "pitch: " << m_pitch << endl;
-    cout << "yaw: " << YAW_ANGLE(m_yaw) << endl;
+    // cout << "roll: " << m_roll << endl;
+    // cout << "pitch: " << m_pitch << endl;
+    // cout << "yaw: " << YAW_ANGLE(m_yaw) << endl;
 
     Quaternionf q_update;
     if (YAW_ANGLE(m_yaw) >= 10 || YAW_ANGLE(m_yaw) <= -10)

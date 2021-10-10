@@ -53,9 +53,9 @@ apriltag_detection_info_t info;
  * ID of marker
  * - marker size more than is IDLARGE 
  */
-#define IDLOW    22
-#define IDLARGE    16
-#define SWITCH_HEIGHT    5
+#define IDLOW    8
+#define IDLARGE    11
+#define SWITCH_HEIGHT    2
 
 using namespace std;
 using namespace sensor_msgs;
@@ -156,14 +156,14 @@ void callback(const ImageConstPtr &image_msg) {
             cout << "y: " << pose.t->data[1] << endl;
             cout << "z: " << pose.t->data[2] << endl;
 
-            if (pose.t->data[2]<= SWITCH_HEIGHT) {
-                switch_ID = IDLOW;
-                info.tagsize = 0.09;
-            }
-            if (pose.t->data[2]>= SWITCH_HEIGHT) {
-                switch_ID = IDLARGE;
-                info.tagsize = 0.9;
-            }
+            // if (pose.t->data[2]<= SWITCH_HEIGHT) {
+            //     switch_ID = IDLOW;
+            //     info.tagsize = 0.021;
+            // }
+            // if (pose.t->data[2]>= SWITCH_HEIGHT) {
+            //     switch_ID = IDLARGE;
+            //     info.tagsize = 0.213;
+            // }
 
             rotation_matrix.at<double>(0,0) = pose.R->data[0];
             rotation_matrix.at<double>(0,1) = pose.R->data[1];

@@ -6,7 +6,7 @@ add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
-        geometry_msgs roscpp rospy std_msgs tf2 tf2_ros  std_msgs)
+        geometry_msgs roscpp rospy std_msgs tf2 tf2_ros)
 
 ###################################
 ## catkin specific configuration ##
